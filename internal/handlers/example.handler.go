@@ -5,8 +5,8 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/mhirii/rest-template/internal/dto"
-	"github.com/mhirii/rest-template/internal/logging"
 	"github.com/mhirii/rest-template/internal/service"
+	"github.com/rs/zerolog"
 )
 
 // ExampleHandlers contains all handler functions for Example endpoints.
@@ -44,7 +44,7 @@ func (h *ExampleHandlers) Create(ctx context.Context, input *struct {
 	Body dto.Example
 }, error) {
 	e := h.Store.Create(input.Body)
-	l := logging.L()
+	l := zerolog.Ctx(ctx)
 	l.Info().Str("id", e.ID).Msg("Example created")
 	return &struct{ Body dto.Example }{Body: e}, nil
 }
@@ -70,7 +70,7 @@ func (h *ExampleHandlers) Update(ctx context.Context, input *struct {
 	Body dto.Example
 }, error) {
 	e, ok := h.Store.Update(input.ID, input.Body.Name)
-	l := logging.L()
+	l := zerolog.Ctx(ctx)
 	if !ok {
 		l.Warn().Str("id", input.ID).Msg("Example not found for update")
 		return nil, huma.Error404NotFound("not found")
@@ -86,7 +86,7 @@ func (h *ExampleHandlers) Get(ctx context.Context, input *struct {
 	Body dto.Example
 }, error) {
 	e, ok := h.Store.Get(input.ID)
-	l := logging.L()
+	l := zerolog.Ctx(ctx)
 	if !ok {
 		l.Warn().Str("id", input.ID).Msg("Example not found for get")
 		return nil, huma.Error404NotFound("not found")
@@ -100,7 +100,7 @@ func (h *ExampleHandlers) List(ctx context.Context, input *struct{}) (*struct {
 	Body []dto.Example
 }, error) {
 	list := h.Store.List()
-	l := logging.L()
+	l := zerolog.Ctx(ctx)
 	l.Info().Int("count", len(list)).Msg("Examples listed")
 	return &struct{ Body []dto.Example }{Body: list}, nil
 }
@@ -110,7 +110,7 @@ func (h *ExampleHandlers) Delete(ctx context.Context, input *struct {
 	ID string `path:"id"`
 }) (*struct{}, error) {
 	ok := h.Store.Delete(input.ID)
-	l := logging.L()
+	l := zerolog.Ctx(ctx)
 	if !ok {
 		l.Warn().Str("id", input.ID).Msg("Example not found for delete")
 		return nil, huma.Error404NotFound("not found")

@@ -12,9 +12,11 @@ import (
 	"github.com/danielgtaylor/huma/v2/humacli"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/mhirii/rest-template/internal/handlers"
 	"github.com/mhirii/rest-template/internal/logging"
+	"github.com/mhirii/rest-template/internal/observability"
 	"github.com/mhirii/rest-template/internal/service"
 )
 
@@ -36,17 +38,25 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to open log file: %v", err))
 	}
-	logging.InitLogger(logging.LoggerConfig{
-		Level:      zerolog.InfoLevel,
-		Format:     "console", // or "json"
-		Writers:    []io.Writer{os.Stdout, logFile},
-		TimeFormat: "15:04:05",
-	})
+	multi := io.MultiWriter(os.Stdout, logFile)
+	logger := zerolog.New(multi).With().Timestamp().Logger()
+	logging.InitLogger(logger)
+
+	// --- OpenTelemetry Tracing Setup ---
+	ctx := context.Background()
+	shutdown, err := observability.SetupOTelTracing(ctx, "rest-template")
+	if err != nil {
+		panic(fmt.Sprintf("failed to set up OpenTelemetry: %v", err))
+	}
+	defer shutdown(context.Background())
+	// -----------------------------------
 
 	l := logging.L()
 	l.Info().Msg("Starting API server")
+	zerolog.Ctx(context.Background()).Info().Msg("Test log from zerolog.Ctx(context.Background())")
 	cli := humacli.New(func(hooks humacli.Hooks, options *Options) {
 		router := chi.NewMux()
+
 		api := humachi.New(router, huma.DefaultConfig("Huma API Template", "1.0.0"))
 
 		// Register example REST endpoints
@@ -63,7 +73,13 @@ func main() {
 
 		hooks.OnStart(func() {
 			l.Info().Int("port", options.Port).Msg("API server listening")
-			http.ListenAndServe(fmt.Sprintf(":%d", options.Port), router)
+			// Wrap router with otelhttp for tracing
+			importOtelHttp := func() {} // dummy to ensure import
+			_ = importOtelHttp
+			wrapped := otelhttp.NewHandler(router, "http.server")
+			// Attach logger to context after OTel handler
+			wrappedWithLogger := logging.RequestLoggingHandler(wrapped)
+			http.ListenAndServe(fmt.Sprintf(":%d", options.Port), wrappedWithLogger)
 		})
 	})
 	cli.Run()
