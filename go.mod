@@ -1,4 +1,4 @@
-module github.com/yourusername/rest-template
+module github.com/mhirii/rest-template
 
 go 1.25.0
 

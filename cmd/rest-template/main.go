@@ -13,9 +13,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
 
-	"github.com/yourusername/rest-template/internal/handlers"
-	"github.com/yourusername/rest-template/internal/logging"
-	"github.com/yourusername/rest-template/internal/service"
+	"github.com/mhirii/rest-template/internal/handlers"
+	"github.com/mhirii/rest-template/internal/logging"
+	"github.com/mhirii/rest-template/internal/service"
 )
 
 // Options for the CLI. Pass `--port` or set the `SERVICE_PORT` env var.

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/yourusername/rest-template/internal/dto"
-	"github.com/yourusername/rest-template/internal/logging"
-	"github.com/yourusername/rest-template/internal/service"
+	"github.com/mhirii/rest-template/internal/dto"
+	"github.com/mhirii/rest-template/internal/logging"
+	"github.com/mhirii/rest-template/internal/service"
 )
 
 // ExampleHandlers contains all handler functions for Example endpoints.

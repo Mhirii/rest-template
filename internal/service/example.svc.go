@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/yourusername/rest-template/internal/dto"
+	"github.com/mhirii/rest-template/internal/dto"
 )
 
 // ExampleStore is a simple in-memory store for Example resources.
