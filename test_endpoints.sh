@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 API_URL="http://localhost:8888"
 
@@ -11,8 +11,8 @@ echo "Testing POST /examples..."
 EXAMPLE_JSON=$(curl -s -X POST "$API_URL/examples" -H 'Content-Type: application/json' -d '{"id":"test1","name":"Test Example"}')
 EXAMPLE_ID=$(echo "$EXAMPLE_JSON" | jq -r .id)
 if [[ "$EXAMPLE_ID" == "null" || -z "$EXAMPLE_ID" ]]; then
-  echo "POST /examples failed: no id returned"
-  exit 1
+	echo "POST /examples failed: no id returned"
+	exit 1
 fi
 
 # Test /examples GET
@@ -38,8 +38,8 @@ curl -s -X DELETE "$API_URL/examples/$EXAMPLE_ID"
 # Confirm deletion
 echo "Confirming deletion..."
 if curl -s "$API_URL/examples/$EXAMPLE_ID" | grep 'Patched Example'; then
-  echo "DELETE /examples/{id} failed"
-  exit 1
+	echo "DELETE /examples/{id} failed"
+	exit 1
 fi
 
 echo "All endpoint tests passed!"
