@@ -23,15 +23,36 @@ go mod tidy
 # Run the API server
 cd cmd/rest-template
 GO111MODULE=on go run main.go
+
+# Or use the Makefile from the project root:
+make run ARGS="--port=8000 --config=/path/to/configdir"
 ```
 Visit [http://localhost:8888/greeting/world](http://localhost:8888/greeting/world) to see the example endpoint.
 
+You can pass any supported CLI flags using the ARGS variable with make, e.g.:
+```
+make run ARGS="--port=8080 --log_level=debug"
+```
+This will start the server on port 8080 with debug logging.
+
 ## Configuration
-- The server port can be set via CLI flag `--port` or environment variable `SERVICE_PORT` (default: 8888).
-- For more configuration, extend the `Options` struct in `main.go`, a config file loader is planned.
+- All configuration options are defined once in `internal/config/config.go` in the `Config` struct, with defaults set in `defaultConfig`.
+- You can set config values via:
+  - **CLI flags** (highest priority, e.g. `--port=8000 --log_level=debug --config=/path/to/configdir`)
+  - **YAML config file** (`config.yaml` in the directory specified by `--config` or `CONFIG_PATH` env var, or current directory by default)
+  - **Environment variables** (e.g. `SERVICE_PORT`, `LOG_LEVEL`)
+  - **Defaults** (only set once in code)
+- To add new config options, simply add a field to the `Config` struct and update `defaultConfig`.
+- All flags, env vars, and YAML keys are bound automatically using struct tags and Viper.
+- Example config file path usage:
+  - `go run main.go --config=config.yaml --port=8000` (pass a file)
+  - `go run main.go --config=/path/to/configdir --port=8000` (pass a directory)
+  - Or set `CONFIG_PATH` env var before running.
+- The config loader will automatically detect if you pass a file or a directory for `--config` and load the config accordingly.
 
 ## Code Structure
 - `cmd/rest-template/`: Main application entrypoint (`main.go`)
+- `internal/config/`: Centralized config loader and struct
 - `internal/handlers/`: HTTP route registration and handler logic
 - `internal/dto/`: Data Transfer Objects for request/response models
 - `internal/service/`: Business logic and in-memory data store
@@ -48,7 +69,7 @@ Visit [http://localhost:8888/greeting/world](http://localhost:8888/greeting/worl
 
 ## Documentation
 - All official Huma documentation is available in the `docs/huma` directory.
-- API documentation is available at `http://localhost:8888/docs` when the server is running.
+- API documentation is available at `http://<address>:<port>/docs` when the server is running.
 
 ---
 Feel free to customize this template for your own needs!

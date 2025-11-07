@@ -4,7 +4,7 @@ CMD_DIR=cmd/$(APP_NAME)
 .PHONY: run build test tidy
 
 run:
-	cd $(CMD_DIR) && go run main.go
+	go run $(CMD_DIR)/main.go $(ARGS)
 
 build:
 	cd $(CMD_DIR) && go build -o ../../bin/$(APP_NAME)
