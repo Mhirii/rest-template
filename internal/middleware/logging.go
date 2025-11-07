@@ -25,6 +25,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 			Str("path", r.URL.Path).
 			Int("status", ww.status).
 			Dur("duration", duration).
+			Str("agent", r.UserAgent()).
 			Msg("request completed")
 
 		// DEBUG: Log after request log

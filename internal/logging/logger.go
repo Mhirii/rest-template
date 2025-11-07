@@ -1,9 +1,10 @@
 package logging
 
 import (
-	"github.com/rs/zerolog"
 	"net/http"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 var logger zerolog.Logger
@@ -29,6 +30,7 @@ func RequestLoggingHandler(next http.Handler) http.Handler {
 			Str("path", r.URL.Path).
 			Int("status", ww.status).
 			Dur("duration", duration).
+			Str("agent", r.UserAgent()).
 			Msg("request completed")
 	})
 }
