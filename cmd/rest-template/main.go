@@ -85,14 +85,14 @@ func main() {
 		})
 
 		hooks.OnStart(func() {
-			l.Info().Int("port", cfg.Port).Msg("API server listening")
+			l.Info().Int("port", cfg.Server.Port).Msg("API server listening")
 			// Wrap router with otelhttp for tracing
 			importOtelHttp := func() {} // dummy to ensure import
 			_ = importOtelHttp
 			wrapped := otelhttp.NewHandler(router, "http.server")
 			// Attach logger to context after OTel handler
 			wrappedWithLogger := logging.RequestLoggingHandler(wrapped)
-			http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), wrappedWithLogger)
+			http.ListenAndServe(fmt.Sprintf(":%d", cfg.Server.Port), wrappedWithLogger)
 		})
 	})
 	cli.Run()

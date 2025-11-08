@@ -19,8 +19,8 @@ type ServerConfig struct {
 }
 
 type DBConfig struct {
-	Host string `flag:"db_host" env:"DB_HOST" yaml:"db_host" default:"localhost" validate:"required"`
-	Port int    `flag:"db_port" env:"DB_PORT" yaml:"db_port" default:"5432" validate:"min=1,max=65535"`
+	Host string `flag:"db_host" env:"DB_HOST" yaml:"db_host" validate:"required"`
+	Port int    `flag:"db_port" env:"DB_PORT" yaml:"db_port" validate:"min=1,max=65535"`
 }
 
 // --- Main Config Struct ---
@@ -56,8 +56,11 @@ func bindConfigStruct(v *viper.Viper, s interface{}, prefix string) {
 			key = prefix + "." + yamlTag
 		}
 
+		l := logging.L()
 		// Register flag
 		if flagTag != "" {
+			l.Debug().Msgf("Registering flag for field '%s': flag=%s, env=%s, yaml=%s, default=%s", fieldName, flagTag, envTag, yamlTag, defaultTag)
+
 			switch f.Type.Kind() {
 			case reflect.Int, reflect.Int64:
 				defVal := 0
@@ -93,6 +96,7 @@ func bindConfigStruct(v *viper.Viper, s interface{}, prefix string) {
 		}
 		// Set default
 		if defaultTag != "" {
+			l.Debug().Msgf("Setting default for key '%s': %s", key, defaultTag)
 			v.SetDefault(key, defaultTag)
 		}
 		// Bind env
@@ -112,6 +116,8 @@ func validateConfigStruct(s interface{}) error {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		val := vStruct.Field(i)
+		l := logging.L()
+		l.Debug().Msgf("validate config struct %s", f.Name)
 		// Recursively validate nested structs
 		if f.Type.Kind() == reflect.Struct {
 			if err := validateConfigStruct(val.Interface()); err != nil {
@@ -128,22 +134,23 @@ func validateConfigStruct(s interface{}) error {
 			if rule == "required" && isZero(val) {
 				return fmt.Errorf("%s is required", f.Name)
 			}
-			if strings.HasPrefix(rule, "min=") {
-				min := atoi(strings.TrimPrefix(rule, "min="))
+			if after, ok := strings.CutPrefix(rule, "min="); ok {
+				min := atoi(after)
 				if val.Int() < int64(min) {
 					return fmt.Errorf("%s must be >= %d", f.Name, min)
 				}
 			}
-			if strings.HasPrefix(rule, "max=") {
-				max := atoi(strings.TrimPrefix(rule, "max="))
+			if after, ok := strings.CutPrefix(rule, "max="); ok {
+				max := atoi(after)
 				if val.Int() > int64(max) {
 					return fmt.Errorf("%s must be <= %d", f.Name, max)
 				}
 			}
-			if strings.HasPrefix(rule, "oneof=") {
-				opts := strings.Split(strings.TrimPrefix(rule, "oneof="), " ")
+			if after, ok := strings.CutPrefix(rule, "oneof="); ok {
+				opts := strings.Split(after, " ")
 				found := false
 				for _, opt := range opts {
+					l.Debug().Msgf("validate config struct value=%s opt=%s", val.String(), opt)
 					if val.String() == opt {
 						found = true
 					}
@@ -204,6 +211,8 @@ func Load() {
 	if configPath == "" {
 		configPath = "."
 	}
+	l.Debug().Msgf("config path %s", configPath)
+
 	if fi, err := os.Stat(configPath); err == nil && !fi.IsDir() {
 		v.SetConfigFile(configPath)
 	} else {
@@ -211,12 +220,20 @@ func Load() {
 		v.SetConfigType("yaml")
 		v.AddConfigPath(configPath)
 	}
-	_ = v.ReadInConfig() // ignore error if file not found
+	if err := v.ReadInConfig(); err != nil {
+		l.Warn().Msgf("failed to read config file: %v", err)
+	}
 
 	// Unmarshal to config struct
-	_ = v.Unmarshal(&config)
+	if err := v.Unmarshal(&config); err != nil {
+		l.Warn().Msgf("failed to unmarshal config: %v", err)
+	}
+
+	l.Debug().Any("server", config.Server).Msg("validate config struct")
+	l.Debug().Any("db", config.DB).Msg("validate config struct")
 
 	// Validate config
+	l.Debug().Any("server", config.Server).Msg("validate config struct")
 	if err := validateConfigStruct(&config.Server); err != nil {
 		panic(fmt.Sprintf("Config validation error: %v", err))
 	}
